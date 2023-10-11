@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.1/axios.min.js" integrity="sha512-emSwuKiMyYedRwflbZB2ghzX8Cw8fmNVgZ6yQNNXXagFzFOaQmbvQ1vmDkddHjm5AITcBIZfC7k4ShQSjgPAmQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+    <div class="container">
+        <h3>เพิ่มข้อมูล</h3>
+        <br>
+        <div>
+            <p>ประเภท</p>
+            <select class="form-control" id="txt_type">
+                <option value="">--- เลือก ---</option>
+                <option value="รายรับ">รายรับ</option>
+                <option value="รายจ่าย">รายจ่าย</option>
+            </select>
+        </div>
+        <br>
+        <div>
+            <p>หมายเหตุ</p>
+            <input id="txt_remark" type="text" class="form-control" placeholder="กรอกข้อความ">
+        </div>
+        <br>
+        <div>
+            <p>จำนวนเงิน</p>
+            <input id="txt_amount" type="number" class="form-control" placeholder="กรอกจำนวนเงิน">
+        </div>
+        <br>
+        <div>
+            <p>รูปภาพสลิป</p>
+            <div id="render_txt_file" onclick="$('#txt_file').trigger('click')" class="upload-image">
+                <p>อัพโหลดรูปภาพ</p>
+                <img id="txt_image" src="" style="display: none;">
+            </div>
+            <input type="file" id="txt_file"  onchange="upload(this)" accept="image/png, image/jpg, image/jpeg" style="display: none;">
+        </div>
+        <br>
+        <div style="display: flex;">
+            <a href="./index.html" class="btn btn-cancel" style="margin-right: 10px;">ยกเลิก</a>
+            <div onclick="submit()" class="btn btn-success">บันทึก</div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(() => {
+            
+        })
+
+        
+
+        function upload(elem) {
+            console.log(">>>",elem.id)
+            var myfile = document.getElementById(elem.id).files;
+            console.log("myfile", myfile)
+            var formData = new FormData();
+            
+
+            var filesize = myfile[0].size;
+            var filekb = filesize / 1024; //KB
+            var filemb = filekb / 1024; //MB
+            console.log(filesize, filekb, filemb);
+
+            if(filemb <= 1) {
+                formData.append('myfile', myfile[0], myfile[0].name);
+
+                var config = {
+                    headers: {
+                        "content-type": "multipart/form-data"
+                    }
+                }
+                axios.post("http://localhost:3000/api/upload", formData, config)
+                .then((response) => {
+                    console.log(response.data);
+                    if(response.data.code == 200) {
+                        $("#render_" + elem.id).html(`
+                            <img src="${response.data.result.fullpath}" style="object-fit: cover; width: 100%; height: 100%;" />
+                        `)
+                    }
+                    else {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "มีบางอย่างผิดพลาด",
+                            confirmButtonText: "ตกลง"
+                        })
+                    }
+                })
+                .catch((error) => {
+                    console.log(error)
+                    Swal.fire({
+                        icon: "error",
+                        title: "มีบางอย่างผิดพลาด",
+                        confirmButtonText: "ตกลง"
+                    })
+                })
+            }
+            else {
+                Swal.fire({
+                    icon: "warning",
+                    title: "จำกัดขนาดไฟล์",
+                    text: "โปรดอัพโหลดไฟล์ไม่เกิน 1MB",
+                    confirmButtonText: "ตกลง"
+                })
+            }
+        }
+
+        function submit() {
+
+            $(".form-control").removeClass("is-invalid")
+            if( $("#txt_type").val() == "" ) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "โปรดเลือกประเภท",
+                    confirmButtonText: "ตกลง"
+                })
+                $("#txt_type").addClass("is-invalid")
+            }
+            else if( $("#txt_remark").val().length <= 0 ) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "โปรดกรอกข้อความ",
+                    confirmButtonText: "ตกลง"
+                })
+                $("#txt_remark").addClass("is-invalid")
+            }
+            else if( $("#txt_amount").val().length <= 0 ) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "โปรดกรอกจำนวนเงิน",
+                    confirmButtonText: "ตกลง"
+                })
+                $("#txt_amount").addClass("is-invalid")
+            }
+            else if( $("#render_txt_file img").attr('src').length <= 0 ) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "โปรดอัพโหลดรูปภาพ",
+                    confirmButtonText: "ตกลง"
+                })
+            }
+            else {
+                var type = "";
+                if( $("#txt_type").val() == 'รายจ่าย' ) {
+                    type = "payment";
+                } else {
+                    type = "topup";
+                }
+
+                $.ajax({
+                    method: "post",
+                    url: "http://localhost:3000/api/savestatement",
+                    data: {
+                        "type": type,
+                        "remark": $("#txt_remark").val(),
+                        "amount": $("#txt_amount").val(),
+                        "img": $("#render_txt_file img").attr('src')
+                    }, success: response => {
+                        console.log(response)
+                        if(response.code == 200) {
+                            Swal.fire({
+                                icon: "success",
+                                title: "สำเร็จ",
+                                confirmButtonText: "ตกลง",
+                                timer: 2000
+                            }).then(() => {
+                                window.location.href = "./index.html";
+                            })
+                        }
+                        else {
+                            Swal.fire({
+                                icon: "erorr",
+                                title: "มีบางอย่างผิดพลาด",
+                                confirmButtonText: "ตกลง"
+                            })
+                        }
+                    }, error: err=> {
+                        console.log(err)
+                        Swal.fire({
+                            icon: "erorr",
+                            title: "มีบางอย่างผิดพลาด",
+                            confirmButtonText: "ตกลง"
+                        })
+                    }
+                })
+
+                
+            }
+        }
+    </script>
+</body>
+</html>

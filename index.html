@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <h3>รายงานเดือน <span id="txt_realmonth"></span></h3>
+        <div class="box info">
+            <div>คงเหลือ</div>
+            <h1 id="txt_remaining"></h1>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <a href="./add.html" class="box success" style="margin-right: 10px;">
+                <p>รายรับ</p>
+                <p id="txt_income"></p>
+            </a>
+            <a href="add.html" class="box danger" style="margin-left: 10px;">
+                <p>รายจ่าย</p>
+                <p id="txt_outcome"></p>
+            </a>
+        </div>
+        <div style=" display: flex; margin-top: 30px;">
+            <div onclick="tapsearch(this, '')" id="tap_all" class="tag active">ทั้งหมด</div>
+            <div onclick="tapsearch(this, 'TOPUP')" id="tap_income" class="tag ">รายรับ</div>
+            <div onclick="tapsearch(this, 'PAYMENT')" id="tap_outcome" class="tag ">รายจ่าย</div>
+        </div>
+        <div id="render_statement" style="margin-top: 10px;">
+            
+        </div>
+    </div>
+
+    <script>
+        var response = {
+            code: 200,
+            result: []
+            // result: [{
+            //     id: 1,
+            //     type: "PAYMENT",
+            //     title: "ค่าข้าวกะเพราะหมูกรอบ",
+            //     amount: 75,
+            //     doingtime: "2023-06-27 12:50:31",
+            //     slip: "https://images.unsplash.com/photo-1687791301950-972428a58aa4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1031&q=80"                
+            // },{
+            //     id: 2,
+            //     type: "TOPUP",
+            //     title: "รายรับ",
+            //     amount: 2000,
+            //     doingtime: "2023-06-28 09:10:53",
+            //     slip: "https://images.unsplash.com/photo-1687791301950-972428a58aa4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1031&q=80"                
+            // },{
+            //     id: 3,
+            //     type: "PAYMENT",
+            //     title: "ข้าวหมูแดง พิเศษ",
+            //     amount: 120,
+            //     doingtime: "2023-06-28 12:10:53",
+            //     slip: "https://images.unsplash.com/photo-1687791301950-972428a58aa4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1031&q=80"                
+            // }]
+        }
+
+        //              0           1       2       3       4           5           6       7
+        var month = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+        $(document).ready(() => {
+            $.ajax({
+                method: "post",
+                url: "http://localhost:3000/api/getstatement",
+                data: {
+                    
+                }, success: data1 => {
+                    console.log(data1)
+                    if(data1.code == 200) {
+                        response.result = data1.result;
+                        $("#txt_remaining").text( numberWithCommas(data1.balance + "") )
+                        $("#txt_outcome").text( numberWithCommas(data1.payment + "") );
+
+                        render("");
+                        var d = new Date();
+                        var dm = d.getMonth();
+                        var dy = d.getFullYear() + 543;
+                        $("#txt_realmonth").text(month[dm] + " " + dy)
+                    }
+                }, error: err => {
+                    console.log(err)
+                }
+            })
+
+        })
+
+        function render(search) {
+            console.log("search", search)
+            var html = "";
+            var topup = 0;
+            for (let i = 0; i < response.result.length; i++) {
+                const element = response.result[i];
+
+                if( String(element.type).includes(search) ) {
+                    var obj = {}
+                    if(element.type == "PAYMENT") {
+                        obj.icon = `<i class="fa-solid fa-basket-shopping" style="font-size: 30px;"></i>`;
+                        obj.amount = `<p class="text-danger" style="font-size: 14px;">-${numberWithCommas(element.amount)} บาท</p>`;
+                    }
+                    else { // topup
+                        obj.icon = `<i class="fa-solid fa-money-bill-wave" style="font-size: 30px;"></i>`;
+                        obj.amount = `<p class="text-success" style="font-size: 14px;">+${numberWithCommas(element.amount)} บาท</p>`;
+                        topup += parseFloat(element.amount);
+                        // topup = topup + 10;
+                    }
+
+                    console.log(obj)
+
+                    html += `
+                    <div onclick="taptap(this)" id="statement${i}" class="statement ${element.type}">
+                        <div style="display: flex; align-items: center;">
+                            ${obj.icon}
+                            <div style="margin-left: 15px;">
+                                <p style="font-size: 12px;">${element.title}</p>
+                                ${obj.amount}
+                                <p class="text-gray" style="font-size: 10px;">${unixTimeToFormattedDate(parseInt(element.mil))}</p>
+                            </div>
+                        </div>
+                        <div id="statement${i}_slip" style="display: none;">
+                            <div style="margin-top: 10px; display: flex; justify-content: center;">
+                                <img src="${element.slip}" 
+                                style="width: 80%; object-fit: contain; border-radius: 10px;">
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }
+
+                
+            }
+            $("#render_statement").html(html)
+            $("#txt_income").text( numberWithCommas(topup) );
+        }
+
+        function taptap(elem) {
+            var id = elem.id;
+            $(`#${id}_slip`).slideToggle();
+        }
+
+        function tapsearch(elem, param) {
+           $(".tag").removeClass("active");
+           var id = elem.id;
+           $(`#${id}`).addClass("active");
+           render(param);
+        }
+
+        function numberWithCommas(x) {
+            x = x.toString();
+            var pattern = /(-?\d+)(\d{3})/;
+            while (pattern.test(x))
+                x = x.replace(pattern, "$1,$2");
+            return x;
+        }
+
+        function unixTimeToFormattedDate(unixTime) {
+            const date = new Date(unixTime); // แปลง Unix timestamp เป็นมิลลิวินาที
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // เพิ่ม leading zero ถ้าต้องการให้เป็น 2 ตัว
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            return formattedDate;
+        }
+
+        // const unixTimestamp = 1624887053; // เปลี่ยนเป็น Unix timestamp ที่คุณต้องการแปลง
+        // const formattedDate = unixTimeToFormattedDate(unixTimestamp);
+        // console.log(formattedDate); // ผลลัพธ์: "2023-06-28 12:10:53"
+
+    </script>
+</body>
+</html>
