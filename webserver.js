@@ -4,7 +4,7 @@ const pgp = require("pg-promise")();
 const bodyParser = require("body-parser");
 const multer = require('multer');
 const cors = require('cors')
-const db = pgp('postgres://postgres:boat2548@thanapat16.3bbddns.com:57495/accountant');
+const db = pgp('postgres://boatengine:QLYaCaUwc8tV6kdkvesvdnrK9YAoR7DK@dpg-ckk1b49jrl0c738gaaag-a/accountant_rujg');
 
 app.use(express.static(__dirname + "/"))
 app.use(bodyParser.urlencoded({ extended: true}));
